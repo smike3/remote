@@ -18,19 +18,22 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-
-
-int
-main ()
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+void command(char cc[2048])
 {
-    
     pid_t p=fork();
+//    printf("(%c)",cc[strlen(cc)-1]);
+    int sl=strlen(cc)-1;
+if(cc[sl]=='\n') cc[sl]='\0';
     if(p==0)
 	{
-	    execl("/usr/bin/audtool","/usr/bin/audtool","playback-stop",NULL);
+	    execl("/usr/bin/audtool","/usr/bin/audtool",cc,NULL);
 	    
 	}
-    printf("\nplayback-stop\n");
+    printf("\n[%s]\n",cc);
 /*  int c, cc;
   read_gp4 ();
   printf
@@ -72,5 +75,65 @@ main ()
   //free(ff.notice);
   printf ("Number of Measures: %d\nNumber of Tracks: %d\n", ff.nmeasures,
 	  ff.ntracks);*/
-  return 0;
+
+ return;
+}
+
+
+int
+main ()
+{
+    int sc, ls;       // дескрипторы сокетов
+    struct sockaddr_in addr; // структура с адресом
+    char buf[2048];       // буфур для приема
+    int bread;           // кол-во принятых байт
+    ls=socket(AF_INET,SOCK_STREAM,0); // создаем сокет для входных подключений
+    if(ls<0)
+	{
+    	 perror("socket");
+    	 exit(1);
+	}
+    // Указываем параметры сервера
+    addr.sin_family=AF_INET;
+    addr.sin_port=htons(3379);
+    //addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    addr.sin_addr.s_addr=inet_addr("127.0.0.1");
+    if(bind(ls,(struct sockaddr *)&addr,sizeof(addr))<0) // связываемся с сетевым устройство. Сейчас это устройство lo - "петля", которое используется для отладки сетевых приложений
+	{
+	 perror("bind");
+	 exit(2);
+	}
+    listen(ls,1); // очередь входных подключений
+    while(1)
+	{
+         sc=accept(ls,NULL,NULL); // принимаем входные подключение и создаем отделный сокет для каждого нового подключившегося клиента
+         if(sc<0)
+    	    {
+             perror("Прием входящих подключений");
+             exit(3);
+    	    }
+	 switch(fork())
+	    {
+	     case -1:
+	        perror("fork");
+	        break;
+	     case 0:
+		close(ls);
+		while(1)
+		    {
+         	     printf("Ожидаем сообщение...\n");
+                     bread=recv(sc,buf,2048,0); // принимаем сообщение от клиента
+	             if(bread<=0) break;
+    	    	     printf("Получено %d bytes\tСообщение: %s\n",bread,buf);
+        	     printf("Отправляю принятое сообщение клиенту\n");
+        	     send(sc,buf,bread,0); // отправляем принятое сообщение клиенту
+        	     command(buf);
+    		    }
+    	        close(sc); // закрываем сокет
+    	        exit(0);
+	     default:
+		close(sc);
+	    }   
+	}
+    return 0;
 }

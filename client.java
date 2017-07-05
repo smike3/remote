@@ -15,7 +15,7 @@ public class client {
 
     System.out.println("Connecting to... "+args[0]);
 
-    fromserver = new Socket(args[0],3799);
+    fromserver = new Socket(args[0],3379);
     BufferedReader in  = new
      BufferedReader(new 
       InputStreamReader(fromserver.getInputStream()));
@@ -24,9 +24,11 @@ public class client {
     BufferedReader inu = new 
      BufferedReader(new InputStreamReader(System.in));
 
+    //String fuser="playback-play",fserver;
     String fuser,fserver;
 
     while ((fuser = inu.readLine())!=null) {
+//    while (fuser!=null) {
       out.println(fuser);
       fserver = in.readLine();
       System.out.println(fserver);
