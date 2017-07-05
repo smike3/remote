@@ -22,12 +22,13 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-void command(char cc[2048])
+void command(char cc[2048],int br)
 {
     pid_t p=fork();
 //    printf("(%c)",cc[strlen(cc)-1]);
-    int sl=strlen(cc)-1;
-if(cc[sl]=='\n') cc[sl]='\0';
+//    int sl=strlen(cc)-1;
+br--;
+if(cc[br]=='\n') cc[br]='\0';
     if(p==0)
 	{
 	    execl("/usr/bin/audtool","/usr/bin/audtool",cc,NULL);
@@ -122,12 +123,13 @@ main ()
 		while(1)
 		    {
          	     printf("Ожидаем сообщение...\n");
+         	     buf[0]='\0';
                      bread=recv(sc,buf,2048,0); // принимаем сообщение от клиента
 	             if(bread<=0) break;
     	    	     printf("Получено %d bytes\tСообщение: %s\n",bread,buf);
         	     printf("Отправляю принятое сообщение клиенту\n");
         	     send(sc,buf,bread,0); // отправляем принятое сообщение клиенту
-        	     command(buf);
+        	     command(buf,bread);
     		    }
     	        close(sc); // закрываем сокет
     	        exit(0);
