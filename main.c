@@ -22,19 +22,46 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-void command(char cc[2048],int br)
+int command(char cc[2048],int br)
 {
-    pid_t p=fork();
+    pid_t p;
+    int cpipe[2];
+    pipe(cpipe);
+    int rb;
+    char bb[256]="";
 //    printf("(%c)",cc[strlen(cc)-1]);
 //    int sl=strlen(cc)-1;
-br--;
+//p=fork();
+//if(strncmp(cc,"current-song",12))
+switch(fork())
+{case -1:
+    perror("Fork faild");
+    exit(1);
+case 0:
+    close(cpipe[0]);
+    dup2(cpipe[1],1);
+    br--;
+    if(cc[br]=='\n') cc[br]='\0';
+//    execl("/usr/bin/audtool","/usr/bin/audtool",cc,NULL);
+    if(strncmp(cc,"current-song",12)) execl("/usr/bin/audtool","/usr/bin/audtool",cc,"current-song",NULL);
+    else execl("/usr/bin/audtool","/usr/bin/audtool",cc,NULL);
+    printf("\n[%s]\n",cc);
+    close(cpipe[1]);
+    exit(0);
+}
+close(cpipe[1]);
+rb=read(cpipe[0],cc,256);
+close(cpipe[0]);
+cc[--rb]='\0';
+printf("{%s}(%d)",cc,rb);
+/*br--;
 if(cc[br]=='\n') cc[br]='\0';
     if(p==0)
 	{
 	    execl("/usr/bin/audtool","/usr/bin/audtool",cc,NULL);
 	    
 	}
-    printf("\n[%s]\n",cc);
+    printf("\n[%s]\n",cc);*/
 /*  int c, cc;
   read_gp4 ();
   printf
@@ -77,14 +104,14 @@ if(cc[br]=='\n') cc[br]='\0';
   printf ("Number of Measures: %d\nNumber of Tracks: %d\n", ff.nmeasures,
 	  ff.ntracks);*/
 
- return;
+ return rb;
 }
 
 
 int
 main ()
 {
-    int sc, ls;       // дескрипторы сокетов
+    int sc, ls, c;       // дескрипторы сокетов
     struct sockaddr_in addr; // структура с адресом
     char buf[2048];       // буфур для приема
     int bread;           // кол-во принятых байт
@@ -98,7 +125,7 @@ main ()
     addr.sin_family=AF_INET;
     addr.sin_port=htons(3379);
     //addr.sin_addr.s_addr = htonl(INADDR_ANY);
-    addr.sin_addr.s_addr=inet_addr("127.0.0.1");
+    addr.sin_addr.s_addr=inet_addr("10.6.133.66");
     if(bind(ls,(struct sockaddr *)&addr,sizeof(addr))<0) // связываемся с сетевым устройство. Сейчас это устройство lo - "петля", которое используется для отладки сетевых приложений
 	{
 	 perror("bind");
@@ -127,9 +154,13 @@ main ()
                      bread=recv(sc,buf,2048,0); // принимаем сообщение от клиента
 	             if(bread<=0) break;
     	    	     printf("Получено %d bytes\tСообщение: %s\n",bread,buf);
-        	     printf("Отправляю принятое сообщение клиенту\n");
-        	     send(sc,buf,bread,0); // отправляем принятое сообщение клиенту
-        	     command(buf,bread);
+        	     printf("Отправляю принятое сообщение клиенту\n\n\n");
+        	     c=command(buf,bread);
+        //	     read(fileno(stdout),buf,2048);
+			//if(rb==-1) send(sc,buf,c,0);
+    		printf("C: %d[%s]\n",c,buf);
+        	     send(sc,buf,c,0); // отправляем принятое сообщение клиенту
+        	    
     		    }
     	        close(sc); // закрываем сокет
     	        exit(0);
