@@ -26,10 +26,10 @@
 int command(char cc[2048],int br,int rb)
 {
     pid_t p;
-    int cpipe[2];
+    int cpipe[2],rbb;
     pipe(cpipe);
 //    int rb[2];
-    char bb[256]="",c1[4],c2[2048];
+    char bb[256]="",c1[4],c2[2048],*c;
     switch(fork())
 	{
 	case -1:
@@ -40,8 +40,13 @@ int command(char cc[2048],int br,int rb)
 	    dup2(cpipe[1],1);
 	    br--;
 	    if(cc[br]=='\n') cc[br]='\0';
-	    if(strncmp(cc,"current-song",12)) execl("/usr/bin/audtool","/usr/bin/audtool",cc,"get-volume","current-song",NULL);
-	    else execl("/usr/bin/audtool","/usr/bin/audtool","get-volume",cc,NULL);
+	    if(!strncmp(cc,"current-song",12)) execl("/usr/bin/audtool","/usr/bin/audtool","get-volume",cc,NULL);
+	    if(!strncmp(cc,"set-volume",10)){
+		c=strchr(cc,' ');
+		c++;
+	     execl("/usr/bin/audtool","/usr/bin/audtool","set-volume",c,"get-volume","current-song",NULL);
+	     }
+	    else execl("/usr/bin/audtool","/usr/bin/audtool",cc,"get-volume","current-song",NULL);
 	    printf("\n[%s]\n",cc);
 	    close(cpipe[1]);
 	    exit(0);
