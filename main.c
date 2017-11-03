@@ -22,94 +22,50 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-int command(char cc[2048],int br)
+
+int command(char cc[2048],int br,int rb)
 {
     pid_t p;
     int cpipe[2];
     pipe(cpipe);
-    int rb;
-    char bb[256]="";
-//    printf("(%c)",cc[strlen(cc)-1]);
-//    int sl=strlen(cc)-1;
-//p=fork();
-//if(strncmp(cc,"current-song",12))
-switch(fork())
-{case -1:
-    perror("Fork faild");
-    exit(1);
-case 0:
-    close(cpipe[0]);
-    dup2(cpipe[1],1);
-    br--;
-    if(cc[br]=='\n') cc[br]='\0';
-//    execl("/usr/bin/audtool","/usr/bin/audtool",cc,NULL);
-    if(strncmp(cc,"current-song",12)) execl("/usr/bin/audtool","/usr/bin/audtool",cc,"current-song",NULL);
-    else execl("/usr/bin/audtool","/usr/bin/audtool",cc,NULL);
-    printf("\n[%s]\n",cc);
-    close(cpipe[1]);
-    exit(0);
-}
-close(cpipe[1]);
-rb=read(cpipe[0],cc,256);
-close(cpipe[0]);
-cc[--rb]='\0';
-printf("{%s}(%d)",cc,rb);
-/*br--;
-if(cc[br]=='\n') cc[br]='\0';
-    if(p==0)
+//    int rb[2];
+    char bb[256]="",c1[4],c2[2048];
+    switch(fork())
 	{
-	    execl("/usr/bin/audtool","/usr/bin/audtool",cc,NULL);
-	    
+	case -1:
+	    perror("Fork faild");
+	    exit(1);
+	case 0:
+	    close(cpipe[0]);
+	    dup2(cpipe[1],1);
+	    br--;
+	    if(cc[br]=='\n') cc[br]='\0';
+	    if(strncmp(cc,"current-song",12)) execl("/usr/bin/audtool","/usr/bin/audtool",cc,"get-volume","current-song",NULL);
+	    else execl("/usr/bin/audtool","/usr/bin/audtool","get-volume",cc,NULL);
+	    printf("\n[%s]\n",cc);
+	    close(cpipe[1]);
+	    exit(0);
 	}
-    printf("\n[%s]\n",cc);*/
-/*  int c, cc;
-  read_gp4 ();
-  printf
-    ("Version: %s\nTitle: %s\nSubtitle: %s\nInterpret: %s\nAlbum: %s\nAuthor: %s\nCopyright: %s\nAuthor of the tab: %s\nInstructional: %s\nNotice: ",
-     ff.version, ff.title, ff.subtitle, ff.interpret, ff.album, ff.author,
-     ff.copyright, ff.authort, ff.instructional);
-  for (c = 0; c < nnotice; c++)
-    printf ("%s\n", ff.notice[c]);
-  printf ("TripletFeel: %d\nLyrics track: %d\nLyrics\n", (int) ff.tripletfeel,
-	  ff.lyricstrack);
-  for (c = 0; c < 5; c++)
-    printf ("%d| %d %d '%s'\n", c, m, sll, ff.lyrics[c]);
-  printf ("Tempo: %d\nKey: ", ff.tempo);
-  switch (ff.key)
-    {
-    case 0:
-      printf ("C\n");
-      break;
-    case 1:
-      printf ("G\n");
-      break;
-    case 2:
-      printf ("D\n");
-      break;
-    case -1:
-      printf ("F\n");
-      break;
-    }
-  printf ("Octava: %d\nMidi table\n", ff.octava);
-  for (c = 0; c < 4; c++)
-    for (cc = 0; cc < 16; cc++)
-      printf
-	("[%d,%d] i: %d v: %d b: %d c: %d r: %d p: %d t: %d 1: %d 2: %d\n", c,
-	 cc, ff.mchannels[c][cc].instrument, (int) ff.mchannels[c][cc].volume,
-	 (int) ff.mchannels[c][cc].balance, (int) ff.mchannels[c][cc].chorus,
-	 (int) ff.mchannels[c][cc].reverb, (int) ff.mchannels[c][cc].phaser,
-	 (int) ff.mchannels[c][cc].tremolo, (int) ff.mchannels[c][cc].blank1,
-	 (int) ff.mchannels[c][cc].blank2);
-  //free(ff.notice);
-  printf ("Number of Measures: %d\nNumber of Tracks: %d\n", ff.nmeasures,
-	  ff.ntracks);*/
-
- return rb;
+/*    close(cpipe[1]);
+    rb[0]=read(cpipe[0],cc,256);
+    cc[--rb[0]]='\0';
+    rb[1]=atoi(cc);
+    rb[0]=read(cpipe[0],cc,256);
+    close(cpipe[0]);
+    cc[--rb[0]]='\0';
+    printf("{%s}(%d)[%d]",cc,rb[0],rb[1]);*/
+    close(cpipe[1]);
+    rb=read(cpipe[0],c1,5);
+    c1[--rb]='\0';
+    rb=read(cpipe[0],c2,2048);
+    close(cpipe[0]);
+    c2[--rb]='\0';
+    sprintf(cc,"[%03d]%s",atoi(c1),c2);
+    printf("{%s}(%d)",cc,rb);
+     return rb+5;
 }
 
-
-int
-main ()
+int main ()
 {
     int sc, ls, c;       // дескрипторы сокетов
     struct sockaddr_in addr; // структура с адресом
@@ -155,12 +111,12 @@ main ()
 	             if(bread<=0) break;
     	    	     printf("Получено %d bytes\tСообщение: %s\n",bread,buf);
         	     printf("Отправляю принятое сообщение клиенту\n\n\n");
-        	     c=command(buf,bread);
+        	     c=command(buf,bread,c);
         //	     read(fileno(stdout),buf,2048);
 			//if(rb==-1) send(sc,buf,c,0);
-    		printf("C: %d[%s]\n",c,buf);
-        	     send(sc,buf,c,0); // отправляем принятое сообщение клиенту
-        	    
+    		     printf("C: %d[%s]\n",c,buf);
+	    	     if(c>0) send(sc,buf,c,0); // отправляем принятое сообщение клиенту
+	    	     else send(sc,"none",4,0);
     		    }
     	        close(sc); // закрываем сокет
     	        exit(0);
