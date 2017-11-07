@@ -120,8 +120,8 @@ int main ()
         //	     read(fileno(stdout),buf,2048);
 			//if(rb==-1) send(sc,buf,c,0);
     		     printf("C: %d[%s]\n",c,buf);
-	    	     if(c>0) send(sc,buf,c,0); // отправляем принятое сообщение клиенту
-	    	     else send(sc,"none",4,0);
+	    	     if(c>4) send(sc,buf,c,0); // отправляем принятое сообщение клиенту
+	    	     else send(sc,"[000]none",9,0);
     		    }
     	        close(sc); // закрываем сокет
     	        exit(0);
