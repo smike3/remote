@@ -18,18 +18,44 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <dirent.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+int command_mvp(char cc[20480],int br,int rb)
+{
+ DIR *dir;
+ int i;
+ struct dirent *fname;
+     dir=opendir("/home/smike");
+     if (!dir) {
+             perror("diropen");
+             return 0;
+         };
+  //   printf("<%s>",cc);
+     //sprintf(cc,"directy");
+     while((fname=readdir(dir))!=NULL)
 
-int command(char cc[2048],int br,int rb)
+             if(fname->d_name[0]!='.') {//printf("|%s|",fname->d_name);
+             sprintf(cc,"%s[%s]",cc,fname->d_name);
+             };
+
+
+         closedir(dir);
+//for(i=0;i<br;i++) cc[i]=cc[i+1];
+
+ return strlen(cc);
+}
+
+int command_aud(char cc[20480],int br,int rb)
 {
     pid_t p;
-    int cpipe[2],rbb;
+    int cpipe[2],rbb,i;
     pipe(cpipe);
 //    int rb[2];
     char bb[256]="",c1[4],c2[2048],*c;
+    for(i=0;i<br;i++) cc[i]=cc[i+1];
     switch(fork())
 	{
 	case -1:
@@ -65,16 +91,16 @@ int command(char cc[2048],int br,int rb)
     rb=read(cpipe[0],c2,2048);
     close(cpipe[0]);
     c2[--rb]='\0';
-    sprintf(cc,"[%03d]%s",atoi(c1),c2);
+    sprintf(cc,"0[%03d]%s",atoi(c1),c2);
     printf("{%s}(%d)",cc,rb);
-     return rb+5;
+    return rb+5;
 }
 
 int main ()
 {
-    int sc, ls, c;       // дескрипторы сокетов
+    int sc, ls, c,i;       // дескрипторы сокетов
     struct sockaddr_in addr; // структура с адресом
-    char buf[2048];       // буфур для приема
+    char buf[20480];       // буфур для приема
     int bread;           // кол-во принятых байт
     ls=socket(AF_INET,SOCK_STREAM,0); // создаем сокет для входных подключений
     if(ls<0)
@@ -116,12 +142,23 @@ int main ()
 	             if(bread<=0) break;
     	    	     printf("Получено %d bytes\tСообщение: %s\n",bread,buf);
         	     printf("Отправляю принятое сообщение клиенту\n\n\n");
-        	     c=command(buf,bread,c);
+        	     printf("!%c!\n",buf[0]);
+        	     switch(buf[0])
+        	     {
+        	     case '0': c=command_aud(buf,bread,c);
+        	        break;
+        	     case '1': c=command_mvp(buf,bread,c);
+        	        break;
+        	     default: buf[0]='\0';
+
+        	     }
+
+
         //	     read(fileno(stdout),buf,2048);
 			//if(rb==-1) send(sc,buf,c,0);
-    		     printf("C: %d[%s]\n",c,buf);
+    		     printf("C: %d<%s>\n",c,buf);
 	    	     if(c>4) send(sc,buf,c,0); // отправляем принятое сообщение клиенту
-	    	     else send(sc,"[000]none",9,0);
+	    	     else send(sc,"0[000]none",10,0);
     		    }
     	        close(sc); // закрываем сокет
     	        exit(0);
