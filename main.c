@@ -93,7 +93,7 @@ int command_aud(char cc[20480],int br,int rb)
     c2[--rb]='\0';
     sprintf(cc,"0[%03d]%s",atoi(c1),c2);
     printf("{%s}(%d)",cc,rb);
-    return rb+5;
+    return rb+6;
 }
 
 int main ()
@@ -112,7 +112,7 @@ int main ()
     addr.sin_family=AF_INET;
     addr.sin_port=htons(3379);
     //addr.sin_addr.s_addr = htonl(INADDR_ANY);
-    addr.sin_addr.s_addr=inet_addr("10.6.133.66");
+    addr.sin_addr.s_addr=inet_addr("192.168.0.9");
     if(bind(ls,(struct sockaddr *)&addr,sizeof(addr))<0) // связываемся с сетевым устройство. Сейчас это устройство lo - "петля", которое используется для отладки сетевых приложений
 	{
 	 perror("bind");
