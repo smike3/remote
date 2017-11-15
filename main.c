@@ -23,12 +23,16 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-int command_mvp(char cc[20480],int br,int rb)
+int command_mvp(char cc[20480],int br)
 {
  DIR *dir;
  int i;
+ char s[20480];
  struct dirent *fname;
-     dir=opendir("/home/smike");
+ for(i=0;i<br-4;i++) s[i]=cc[i+4];
+ printf("\n%s\n",s);
+ cc[4]='\0';
+     dir=opendir(s);
      if (!dir) {
              perror("diropen");
              return 0;
@@ -37,8 +41,8 @@ int command_mvp(char cc[20480],int br,int rb)
      //sprintf(cc,"directy");
      while((fname=readdir(dir))!=NULL)
 
-             if(fname->d_name[0]!='.') {//printf("|%s|",fname->d_name);
-             sprintf(cc,"%s[%s]",cc,fname->d_name);
+             if((fname->d_name[0]!='.')&&(fname->d_type==DT_REG)) {//printf("|%s|",fname->d_name);
+             sprintf(cc,"%s!%s",cc,fname->d_name);
              };
 
 
@@ -48,10 +52,10 @@ int command_mvp(char cc[20480],int br,int rb)
  return strlen(cc);
 }
 
-int command_aud(char cc[20480],int br,int rb)
+int command_aud(char cc[20480],int br)
 {
     pid_t p;
-    int cpipe[2],rbb,i;
+    int cpipe[2],rbb,i,rb;
     pipe(cpipe);
 //    int rb[2];
     char bb[256]="",c1[4],c2[2048],*c;
@@ -91,8 +95,13 @@ int command_aud(char cc[20480],int br,int rb)
     rb=read(cpipe[0],c2,2048);
     close(cpipe[0]);
     c2[--rb]='\0';
-    sprintf(cc,"0[%03d]%s",atoi(c1),c2);
-    printf("{%s}(%d)",cc,rb);
+    if(rb<0)
+    {
+    sprintf(cc,"0[%03d]none",atoi(c1));
+    rb=4;
+    }
+    else sprintf(cc,"0[%03d]%s",atoi(c1),c2);
+    printf("{%s}(%d}",cc,rb);
     return rb+6;
 }
 
@@ -112,7 +121,7 @@ int main ()
     addr.sin_family=AF_INET;
     addr.sin_port=htons(3379);
     //addr.sin_addr.s_addr = htonl(INADDR_ANY);
-    addr.sin_addr.s_addr=inet_addr("192.168.0.9");
+    addr.sin_addr.s_addr=inet_addr("10.6.133.66");
     if(bind(ls,(struct sockaddr *)&addr,sizeof(addr))<0) // связываемся с сетевым устройство. Сейчас это устройство lo - "петля", которое используется для отладки сетевых приложений
 	{
 	 perror("bind");
@@ -145,9 +154,11 @@ int main ()
         	     printf("!%c!\n",buf[0]);
         	     switch(buf[0])
         	     {
-        	     case '0': c=command_aud(buf,bread,c);
+//        	     case '0': c=command_aud(buf,bread,c);
+        	     case '0': c=command_aud(buf,bread);
         	        break;
-        	     case '1': c=command_mvp(buf,bread,c);
+//        	     case '1': c=command_mvp(buf,bread,c);
+        	     case '1': c=command_mvp(buf,bread);
         	        break;
         	     default: buf[0]='\0';
 
