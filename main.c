@@ -19,17 +19,20 @@
 #include <string.h>
 #include <unistd.h>
 #include <dirent.h>
+#include <fcntl.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 int command_mvp(char cc[20480],int br)
 {
  DIR *dir;
- int i;
+ int i,fd;
  char s[20480];
  struct dirent *fname;
  for(i=0;i<br-4;i++) s[i]=cc[i+4];
+ if(!strncmp(cc,"1dir",4)){
  printf("\n%s\n",s);
  cc[4]='\0';
      dir=opendir(s);
@@ -49,7 +52,28 @@ int command_mvp(char cc[20480],int br)
          closedir(dir);
 //for(i=0;i<br;i++) cc[i]=cc[i+1];
 
- return strlen(cc);
+ }
+ else if(!strncmp(cc,"1mvp",4))
+    {
+	
+        switch(fork())
+	{
+	case -1:
+	    perror("Fork faild");
+	    exit(1);
+	case 0:
+	    execl("/usr/bin/mpv", "/usr/bin/mpv","--input-ipc-server=/tmp/clmvp","--vo","opengl",s,NULL);
+	    
+	    exit(0);
+	}
+	fd=open("/tmp/clmpv",O_RDWR);
+//    write(fd,"{ \"command\": [ \"seek\", \"60\"] }",31);
+	write(fd,"{ \"command\": [\"set_property_string\", \"pause\",\"yes\"] }",53);
+    printf("\n{ \"command\": [ \"seek\", \"60\"] }\n");
+    close(fd);
+    }
+
+return strlen(cc);
 }
 
 int command_aud(char cc[20480],int br)
