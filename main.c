@@ -25,12 +25,14 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <sys/un.h>
 int command_mvp(char cc[20480],int br)
 {
  DIR *dir;
- int i,fd;
+ int i,fd,rc,ipc_fd;
  char s[20480];
  struct dirent *fname;
+ struct sockaddr_un ipc;
  for(i=0;i<br-4;i++) s[i]=cc[i+4];
  if(!strncmp(cc,"1dir",4)){
  printf("\n%s\n",s);
@@ -55,23 +57,42 @@ int command_mvp(char cc[20480],int br)
  }
  else if(!strncmp(cc,"1mvp",4))
     {
-	
-        switch(fork())
+	//mkfifo("/tmp/clmpv", 0666);
+       switch(fork())
 	{
 	case -1:
 	    perror("Fork faild");
 	    exit(1);
 	case 0:
-	    execl("/usr/bin/mpv", "/usr/bin/mpv","--input-ipc-server=/tmp/clmvp","--vo","opengl",s,NULL);
+	    execl("/usr/bin/mpv", "/usr/bin/mpv","--input-ipc-server=/tmp/clmpv","--vo","opengl",s,NULL);
 	    
 	    exit(0);
 	}
-	fd=open("/tmp/clmpv",O_RDWR);
-//    write(fd,"{ \"command\": [ \"seek\", \"60\"] }",31);
-	write(fd,"{ \"command\": [\"set_property_string\", \"pause\",\"yes\"] }",53);
-    printf("\n{ \"command\": [ \"seek\", \"60\"] }\n");
-    close(fd);
+
     }
+    else if(!strncmp(cc,"1stp",4))
+        {
+            ipc_fd=socket(AF_UNIX, SOCK_STREAM, 0);
+            /*if (ipc_fd < 0) {
+                MP_ERR(arg, "Could not create IPC socket\n");
+                goto done;
+            }*/
+
+           ipc.sun_family = AF_UNIX;
+           strcpy(ipc.sun_path,"/tmp/clmpv");
+            rc = connect(ipc_fd, (struct sockaddr *) &ipc, sizeof(struct sockaddr_un));
+            //strcpy(s,"{ \"command\": [\"set\", \"pause\", \"yes\"] }\n");
+            strcpy(s,"{ \"command\": [\"cycle\", \"pause\"] }\n");
+            rc = write(ipc_fd, s, strlen(s));
+            printf("\n%s",s);
+            rc = read(ipc_fd, s, 20480);
+
+            //    write(fd,"{ \"command\": [ \"seek\", \"60\"] }",31);
+         //   	write(fd,"{ \"command\": [\"set_property_string\", \"pause\",\"yes\"] }",53);
+           printf("\n{ \"command\": [ \"seek\", \"60\"] }\n %d|%s",rc,s);
+           close(ipc_fd);
+
+        }
 
 return strlen(cc);
 }
@@ -79,7 +100,7 @@ return strlen(cc);
 int command_aud(char cc[20480],int br)
 {
     pid_t p;
-    int cpipe[2],rbb,i,rb;
+    int cpipe[2],rbb,i,rb,fd;
     pipe(cpipe);
 //    int rb[2];
     char bb[256]="",c1[4],c2[2048],*c;
