@@ -70,29 +70,38 @@ int command_mvp(char cc[20480],int br)
 	}
 
     }
-    else if(!strncmp(cc,"1stp",4))
-        {
+    else {
             ipc_fd=socket(AF_UNIX, SOCK_STREAM, 0);
+            ipc.sun_family = AF_UNIX;
+             strcpy(ipc.sun_path,"/tmp/clmpv");
+             rc = connect(ipc_fd, (struct sockaddr *) &ipc, sizeof(struct sockaddr_un));
+            if(!strncmp(cc,"1stp",4)) strcpy(s,"{ \"command\": [\"osd-msg-bar\", \"cycle\", \"pause\"] }\n");
+            else if(!strncmp(cc,"1vup",4)) strcpy(s,"{ \"command\": [\"osd-msg-bar\", \"add\", \"volume\", \"+5\"] }\n");
+                else if(!strncmp(cc,"1vdn",4)) strcpy(s,"{ \"command\": [\"osd-msg-bar\", \"add\", \"volume\", \"-5\"] }\n");
+                    else if(!strncmp(cc,"1qui",4)) strcpy(s,"{ \"command\": [\"quit\", \"1\"] }\n");
+                rc = write(ipc_fd, s, strlen(s));
+                printf("\n%s",s);
+                rc = read(ipc_fd, s, 20480);
+
+                //    write(fd,"{ \"command\": [ \"seek\", \"60\"] }",31);
+             //   	write(fd,"{ \"command\": [\"set_property_string\", \"pause\",\"yes\"] }",53);
+             //  printf("\n{ \"command\": [ \"seek\", \"60\"] }\n %d|%s",rc,s);
+               close(ipc_fd);
+
+
             /*if (ipc_fd < 0) {
                 MP_ERR(arg, "Could not create IPC socket\n");
                 goto done;
             }*/
 
-           ipc.sun_family = AF_UNIX;
-           strcpy(ipc.sun_path,"/tmp/clmpv");
-            rc = connect(ipc_fd, (struct sockaddr *) &ipc, sizeof(struct sockaddr_un));
-            //strcpy(s,"{ \"command\": [\"set\", \"pause\", \"yes\"] }\n");
-            strcpy(s,"{ \"command\": [\"cycle\", \"pause\"] }\n");
-            rc = write(ipc_fd, s, strlen(s));
-            printf("\n%s",s);
-            rc = read(ipc_fd, s, 20480);
 
-            //    write(fd,"{ \"command\": [ \"seek\", \"60\"] }",31);
-         //   	write(fd,"{ \"command\": [\"set_property_string\", \"pause\",\"yes\"] }",53);
-           printf("\n{ \"command\": [ \"seek\", \"60\"] }\n %d|%s",rc,s);
-           close(ipc_fd);
+
+            //strcpy(s,"{ \"command\": [\"set\", \"volume\", \"+20\"] }\n");
+            //strcpy(s,"{ \"command\": [\"cycle\", \"pause\"] }\n");
+
 
         }
+
 
 return strlen(cc);
 }
