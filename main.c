@@ -26,6 +26,9 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <sys/un.h>
+
+#define ADDR_SERV "192.168.0.106"
+
 int command_mvp(char cc[20480],int br)
 {
  DIR *dir;
@@ -79,6 +82,10 @@ int command_mvp(char cc[20480],int br)
             else if(!strncmp(cc,"1vup",4)) strcpy(s,"{ \"command\": [\"osd-msg-bar\", \"add\", \"volume\", \"+5\"] }\n");
                 else if(!strncmp(cc,"1vdn",4)) strcpy(s,"{ \"command\": [\"osd-msg-bar\", \"add\", \"volume\", \"-5\"] }\n");
                     else if(!strncmp(cc,"1qui",4)) strcpy(s,"{ \"command\": [\"quit\", \"1\"] }\n");
+                	else if(!strncmp(cc,"1adv",4)) strcpy(s,"{ \"command\": [\"osd-msg-bar\", \"seek\",\"+5\"] }\n");
+                	    else if(!strncmp(cc,"1rev",4)) strcpy(s,"{ \"command\": [\"osd-msg-bar\", \"seek\",\"-5\"] }\n");
+                		else if(!strncmp(cc,"1aad",4)) strcpy(s,"{ \"command\": [\"osd-msg-bar\", \"seek\",\"+300\"] }\n");
+                		    else if(!strncmp(cc,"1rre",4)) strcpy(s,"{ \"command\": [\"osd-msg-bar\", \"seek\",\"-300\"] }\n");
                 rc = write(ipc_fd, s, strlen(s));
                 printf("\n%s",s);
                 rc = read(ipc_fd, s, 20480);
@@ -175,7 +182,7 @@ int main ()
     addr.sin_family=AF_INET;
     addr.sin_port=htons(3379);
     //addr.sin_addr.s_addr = htonl(INADDR_ANY);
-    addr.sin_addr.s_addr=inet_addr("10.6.133.66");
+    addr.sin_addr.s_addr=inet_addr(ADDR_SERV);
     if(bind(ls,(struct sockaddr *)&addr,sizeof(addr))<0) // связываемся с сетевым устройство. Сейчас это устройство lo - "петля", которое используется для отладки сетевых приложений
 	{
 	 perror("bind");
