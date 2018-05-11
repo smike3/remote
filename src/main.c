@@ -282,7 +282,7 @@ void send_cover(char *fl_path)
 json_t * command_aud(json_t *jcc,int br)
 {
     pid_t p;
-    int cpipe[2],rbb,i,rb,fd,send_cover_fl=0,v;
+    int cpipe[2],rbb,i,ii=0,rb,fd,send_cover_fl=0,v;
     pipe(cpipe);
 	json_t *send_comm;
 	const char *cc;
@@ -337,6 +337,12 @@ json_t * command_aud(json_t *jcc,int br)
 	rb=read(cpipe[0],c3,2048);
 	c3[--rb]='\0';
     close(cpipe[0]);
+	for(i=0;c3[i]!='\0';i++)
+		{
+		if(c3[i]=='/') ii=i;
+		printf("%c\n",c3[i]);
+		}
+	c3[ii]='\0';
     send_comm=json_pack("{s:i,s:s,s:s,s:i}","volume",atoi(c1),"title",c2,"path",c3,"command_type",0);
 	printf("\n!!!%s!!!%s!!!%s\n",c1,c2,c3);
     if(rb<0)
@@ -349,6 +355,12 @@ json_t * command_aud(json_t *jcc,int br)
 	printf("\n%s\n",json_dumps(send_comm,0));
    // return rb+6;
 	return send_comm;
+}
+
+void file_send(int sc, json_t *jcc)
+{
+	
+	return;
 }
 
 int main ()
@@ -414,6 +426,8 @@ int main ()
 //        	     case '1': c=command_mvp(buf,bread,c);
         	     case 1: scomm=command_mvp(comm,bread);
         	        break;
+				 case 2: file_send(sc,comm);
+					break;
         	     default: buf[0]='\0';
 
         	     }
